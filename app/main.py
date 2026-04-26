@@ -44,7 +44,6 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-# OAuth Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°
 oauth = OAuth()
 
 oauth.register(
@@ -166,8 +165,6 @@ def refresh(refresh_token: str):
         "token_type": "bearer"
     }
 
-
-# --- GITHUB OAUTH ---
 
 @app.get("/auth/github")
 async def github_login(request: Request):

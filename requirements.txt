@@ -11,3 +11,4 @@ httpx
 itsdangerous
 python-dotenv
 llama-cpp-python==0.3.20
+alembic

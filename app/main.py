@@ -30,7 +30,7 @@ app.add_middleware(
     secret_key="session-secret-key-change-me"
 )
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()

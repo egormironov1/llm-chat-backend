@@ -15,10 +15,13 @@ from dotenv import load_dotenv
 
 from app.database import Base, engine
 from app.models import user as user_model
+from app.models import chat as chat_model
+from app.models import message as message_model
 from app.schemas.user import UserCreate, UserLogin
+from app.schemas.chat import ChatCreate, MessageCreate
 from app.deps import get_db
 from starlette.middleware.sessions import SessionMiddleware
-
+from app.services.llm_service import generate_answer
 load_dotenv()
 
 app = FastAPI(title="LLM Chat Backend")
@@ -208,4 +211,95 @@ def me(current_user: user_model.User = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "login": current_user.login
+    }
+
+@app.post("/chats")
+def create_chat(
+    chat: ChatCreate,
+    current_user: user_model.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_chat = chat_model.Chat(
+        title=chat.title,
+        user_id=current_user.id
+    )
+
+    db.add(new_chat)
+    db.commit()
+    db.refresh(new_chat)
+
+    return {
+        "id": new_chat.id,
+        "title": new_chat.title,
+        "user_id": new_chat.user_id
+    }
+
+@app.get("/chats")
+def get_chats(
+    current_user: user_model.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    chats = db.query(chat_model.Chat).filter(
+        chat_model.Chat.user_id == current_user.id
+    ).all()
+
+    return chats
+
+@app.get("/chats/{chat_id}/messages")
+def get_messages(
+    chat_id: int,
+    current_user: user_model.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    chat = db.query(chat_model.Chat).filter(
+        chat_model.Chat.id == chat_id,
+        chat_model.Chat.user_id == current_user.id
+    ).first()
+
+    if chat is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    messages = db.query(message_model.Message).filter(
+        message_model.Message.chat_id == chat_id
+    ).all()
+
+    return messages
+
+@app.post("/chats/{chat_id}/ask")
+def ask_chat(
+    chat_id: int,
+    message: MessageCreate,
+    current_user: user_model.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    chat = db.query(chat_model.Chat).filter(
+        chat_model.Chat.id == chat_id,
+        chat_model.Chat.user_id == current_user.id
+    ).first()
+
+    if chat is None:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    user_message = message_model.Message(
+        chat_id=chat_id,
+        role="user",
+        content=message.content
+    )
+
+    db.add(user_message)
+
+    assistant_answer = generate_answer(message.content)
+
+    assistant_message = message_model.Message(
+        chat_id=chat_id,
+        role="assistant",
+        content=assistant_answer
+    )
+
+    db.add(assistant_message)
+    db.commit()
+
+    return {
+        "user_message": message.content,
+        "assistant_answer": assistant_answer
     }

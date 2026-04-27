@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+passlib[bcrypt]
+bcrypt==4.0.1
+python-jose[cryptography]
+redis
+authlib
+httpx
+itsdangerous
+python-dotenv
+llama-cpp-python==0.3.20

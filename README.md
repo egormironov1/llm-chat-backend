@@ -1,29 +1,33 @@
 # LLM Chat Backend
 
-Backend application built with FastAPI.
+This is a backend application made with FastAPI for a homework project.
+
+## Features
+
+- user registration
+- login with JWT
+- refresh token using Redis
+- GitHub OAuth login
+- create chats
+- send messages
+- message history is saved
+- local LLM is connected (llama-cpp)
 
 ## Stack
 
+- Python
 - FastAPI
 - PostgreSQL
 - Redis
 - JWT
 - GitHub OAuth
+- llama-cpp-python
 
-## Features
-
-- User registration
-- Login with JWT
-- Refresh token via Redis
-- GitHub OAuth login
-- Protected endpoint (/me)
-
-## Run
+## How to run
 
 1. Clone repository:
 
-```bash
-git clone https://github.com/your-username/llm-chat-backend.git
+git clone https://github.com/egormironov1/llm-chat-backend.git  
 cd llm-chat-backend
 
 2. Create virtual environment:
@@ -36,21 +40,58 @@ python -m venv .venv
 
 4. Install dependencies:
 
-pip install fastapi uvicorn[standard] sqlalchemy psycopg2-binary passlib[bcrypt] bcrypt==4.0.1 python-jose[cryptography] redis authlib httpx itsdangerous python-dotenv
+pip install -r requirements.txt
 
-5.Create .env file:
+5. Create `.env` file:
 
-GITHUB_CLIENT_ID=your_client_id
-GITHUB_CLIENT_SECRET=your_client_secret
+GITHUB_CLIENT_ID=your_id  
+GITHUB_CLIENT_SECRET=your_secret
 
-6. Start PostgreSQL and Redis:
+6. Start database and Redis:
 
 docker compose up -d
 
-7.Run backend:
+7. Run migrations:
+
+alembic upgrade head
+
+8. Run server:
 
 uvicorn app.main:app --reload
 
-8.Open Swagger:
+9. Open Swagger:
 
 http://127.0.0.1:8000/docs
+
+## Endpoints
+
+- POST /register
+- POST /login
+- POST /refresh
+- GET /me
+- POST /chats
+- GET /chats
+- POST /chats/{chat_id}/ask
+- GET /chats/{chat_id}/messages
+- GET /auth/github
+
+## LLM
+
+Uses local GGUF model.
+
+You need to put file:
+
+model.gguf
+
+in the root of the project.
+
+If model is not available, API still works but returns placeholder answers.
+
+## Architecture
+
+SPA approach (API only).
+
+MCS:
+- models — database models
+- controllers — API endpoints
+- services — LLM logic

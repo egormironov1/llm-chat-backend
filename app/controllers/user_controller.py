@@ -8,7 +8,7 @@ router = APIRouter(tags=["User"])
 
 
 @router.get("/me")
-def me(current_user: user_model.User = Depends(get_current_user)):
+async def me(current_user: user_model.User = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "login": current_user.login

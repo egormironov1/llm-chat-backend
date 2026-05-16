@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 import uuid
 
-import redis
+import redis.asyncio as redis
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db
 from app.models import user as user_model
@@ -31,15 +32,20 @@ redis_client = redis.Redis(
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
     to_encode.update({"exp": expire})
+
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(user_id: int):
+async def create_refresh_token(user_id: int):
     refresh_token = str(uuid.uuid4())
 
-    redis_client.setex(
+    await redis_client.setex(
         name=f"refresh:{refresh_token}",
         time=REFRESH_TOKEN_EXPIRE_SECONDS,
         value=str(user_id)
@@ -48,9 +54,9 @@ def create_refresh_token(user_id: int):
     return refresh_token
 
 
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     token = credentials.credentials
 
@@ -64,9 +70,11 @@ def get_current_user(
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = db.query(user_model.User).filter(
-        user_model.User.id == int(user_id)
-    ).first()
+    result = await db.execute(
+        select(user_model.User).where(user_model.User.id == int(user_id))
+    )
+
+    user = result.scalar_one_or_none()
 
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
@@ -74,10 +82,12 @@ def get_current_user(
     return user
 
 
-def register_user(user: UserCreate, db: Session):
-    existing_user = db.query(user_model.User).filter(
-        user_model.User.login == user.login
-    ).first()
+async def register_user(user: UserCreate, db: AsyncSession):
+    result = await db.execute(
+        select(user_model.User).where(user_model.User.login == user.login)
+    )
+
+    existing_user = result.scalar_one_or_none()
 
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
@@ -90,15 +100,17 @@ def register_user(user: UserCreate, db: Session):
     )
 
     db.add(new_user)
-    db.commit()
+    await db.commit()
 
     return {"message": "User created"}
 
 
-def login_user(user: UserLogin, db: Session):
-    db_user = db.query(user_model.User).filter(
-        user_model.User.login == user.login
-    ).first()
+async def login_user(user: UserLogin, db: AsyncSession):
+    result = await db.execute(
+        select(user_model.User).where(user_model.User.login == user.login)
+    )
+
+    db_user = result.scalar_one_or_none()
 
     if db_user is None:
         raise HTTPException(status_code=401, detail="Invalid login or password")
@@ -107,7 +119,7 @@ def login_user(user: UserLogin, db: Session):
         raise HTTPException(status_code=401, detail="Invalid login or password")
 
     access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token = create_refresh_token(user_id=db_user.id)
+    refresh_token = await create_refresh_token(user_id=db_user.id)
 
     return {
         "access_token": access_token,
@@ -116,8 +128,8 @@ def login_user(user: UserLogin, db: Session):
     }
 
 
-def refresh_access_token(refresh_token: str):
-    user_id = redis_client.get(f"refresh:{refresh_token}")
+async def refresh_access_token(refresh_token: str):
+    user_id = await redis_client.get(f"refresh:{refresh_token}")
 
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")

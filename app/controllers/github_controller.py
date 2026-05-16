@@ -3,7 +3,7 @@ import os
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from app.deps import get_db
@@ -34,10 +34,10 @@ async def github_login(request: Request):
 
 
 @router.get("/auth/github/callback")
-async def github_callback(request: Request, db: Session = Depends(get_db)):
+async def github_callback(request: Request, db: AsyncSession = Depends(get_db)):
     token = await oauth.github.authorize_access_token(request)
 
     resp = await oauth.github.get("user", token=token)
     profile = resp.json()
 
-    return login_or_create_github_user(profile, db)
+    return await login_or_create_github_user(profile, db)

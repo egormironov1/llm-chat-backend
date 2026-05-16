@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-psycopg2-binary
+asyncpg
 passlib[bcrypt]
 bcrypt==4.0.1
 python-jose[cryptography]
@@ -12,3 +12,4 @@ itsdangerous
 python-dotenv
 llama-cpp-python==0.3.20
 alembic
+psycopg2-binary

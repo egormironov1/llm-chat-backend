@@ -1,5 +1,6 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import user as user_model
 from app.models import chat as chat_model
@@ -8,10 +9,10 @@ from app.schemas.chat import ChatCreate, MessageCreate
 from app.services.llm_service import generate_answer
 
 
-def create_user_chat(
+async def create_user_chat(
     chat: ChatCreate,
     current_user: user_model.User,
-    db: Session
+    db: AsyncSession
 ):
     new_chat = chat_model.Chat(
         title=chat.title,
@@ -19,8 +20,8 @@ def create_user_chat(
     )
 
     db.add(new_chat)
-    db.commit()
-    db.refresh(new_chat)
+    await db.commit()
+    await db.refresh(new_chat)
 
     return {
         "id": new_chat.id,
@@ -29,47 +30,61 @@ def create_user_chat(
     }
 
 
-def get_user_chats(
+async def get_user_chats(
     current_user: user_model.User,
-    db: Session
+    db: AsyncSession
 ):
-    chats = db.query(chat_model.Chat).filter(
-        chat_model.Chat.user_id == current_user.id
-    ).all()
+    result = await db.execute(
+        select(chat_model.Chat).where(chat_model.Chat.user_id == current_user.id)
+    )
+
+    chats = result.scalars().all()
 
     return chats
 
 
-def get_chat_messages(
+async def get_chat_messages(
     chat_id: int,
     current_user: user_model.User,
-    db: Session
+    db: AsyncSession
 ):
-    chat = db.query(chat_model.Chat).filter(
-        chat_model.Chat.id == chat_id,
-        chat_model.Chat.user_id == current_user.id
-    ).first()
+    result = await db.execute(
+        select(chat_model.Chat).where(
+            chat_model.Chat.id == chat_id,
+            chat_model.Chat.user_id == current_user.id
+        )
+    )
+
+    chat = result.scalar_one_or_none()
 
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    messages = db.query(message_model.Message).filter(
-        message_model.Message.chat_id == chat_id
-    ).all()
+    result = await db.execute(
+        select(message_model.Message).where(
+            message_model.Message.chat_id == chat_id
+        )
+    )
+
+    messages = result.scalars().all()
 
     return messages
 
 
-def ask_llm_in_chat(
+async def ask_llm_in_chat(
     chat_id: int,
     message: MessageCreate,
     current_user: user_model.User,
-    db: Session
+    db: AsyncSession
 ):
-    chat = db.query(chat_model.Chat).filter(
-        chat_model.Chat.id == chat_id,
-        chat_model.Chat.user_id == current_user.id
-    ).first()
+    result = await db.execute(
+        select(chat_model.Chat).where(
+            chat_model.Chat.id == chat_id,
+            chat_model.Chat.user_id == current_user.id
+        )
+    )
+
+    chat = result.scalar_one_or_none()
 
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -91,7 +106,7 @@ def ask_llm_in_chat(
     )
 
     db.add(assistant_message)
-    db.commit()
+    await db.commit()
 
     return {
         "user_message": message.content,

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db
 from app.models import user as user_model
@@ -17,36 +17,36 @@ router = APIRouter(tags=["Chats"])
 
 
 @router.post("/chats")
-def create_chat(
+async def create_chat(
     chat: ChatCreate,
     current_user: user_model.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    return create_user_chat(chat, current_user, db)
+    return await create_user_chat(chat, current_user, db)
 
 
 @router.get("/chats")
-def get_chats(
+async def get_chats(
     current_user: user_model.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    return get_user_chats(current_user, db)
+    return await get_user_chats(current_user, db)
 
 
 @router.get("/chats/{chat_id}/messages")
-def get_messages(
+async def get_messages(
     chat_id: int,
     current_user: user_model.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    return get_chat_messages(chat_id, current_user, db)
+    return await get_chat_messages(chat_id, current_user, db)
 
 
 @router.post("/chats/{chat_id}/ask")
-def ask_chat(
+async def ask_chat(
     chat_id: int,
     message: MessageCreate,
     current_user: user_model.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    return ask_llm_in_chat(chat_id, message, current_user, db)
+    return await ask_llm_in_chat(chat_id, message, current_user, db)

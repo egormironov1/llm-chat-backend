@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}My Chats - LLM Chat{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+    <aside class="sidebar">
+        <h2>Create chat</h2>
+
+        <div class="sidebar-card">
+            <form method="post" action="/ui/chats/create">
+                <div class="form-group">
+                    <label for="title">Chat title</label>
+                    <input class="input" type="text" id="title" name="title" placeholder="For example: Python helper" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Create chat</button>
+            </form>
+        </div>
+
+        <h2>Your chats</h2>
+
+        <div class="chat-list">
+            {% if chats %}
+                {% for chat in chats %}
+                    <a href="/ui/chats/{{ chat.id }}" class="chat-link">
+                        {{ chat.title }}
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    You do not have chats yet.
+                </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="content-card">
+            <h1>Welcome back</h1>
+            <p class="content-muted">
+                Create a new chat on the left and start talking to your local AI assistant.
+            </p>
+
+            <div class="empty-state">
+                Select a chat from the left panel or create a new one.
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

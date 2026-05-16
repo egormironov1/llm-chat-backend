@@ -3,6 +3,7 @@ import os
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
@@ -40,4 +41,9 @@ async def github_callback(request: Request, db: AsyncSession = Depends(get_db)):
     resp = await oauth.github.get("user", token=token)
     profile = resp.json()
 
-    return await login_or_create_github_user(profile, db)
+    result = await login_or_create_github_user(profile, db)
+
+    request.session["access_token"] = result["access_token"]
+    request.session["login"] = result["login"]
+
+    return RedirectResponse(url="/ui/chats", status_code=303)

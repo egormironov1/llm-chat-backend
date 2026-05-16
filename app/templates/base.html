@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LLM Chat{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="page">
+        <nav class="navbar">
+            {% if request.session.get("login") %}
+                <a href="/ui/chats" class="brand">LLM Chat</a>
+            {% else %}
+                <a href="/" class="brand">LLM Chat</a>
+            {% endif %}
+
+            <div class="nav-links">
+                {% if request.session.get("login") %}
+                    <span class="nav-user">Signed in as {{ request.session.get("login") }}</span>
+                    <a class="btn btn-secondary" href="/ui/chats">Chats</a>
+                    <a class="btn btn-danger" href="/ui/logout">Logout</a>
+                {% else %}
+                    <a class="btn btn-secondary" href="/ui/login">Login</a>
+                    <a class="btn btn-primary" href="/ui/register">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

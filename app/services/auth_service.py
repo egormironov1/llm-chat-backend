@@ -90,7 +90,7 @@ async def register_user(user: UserCreate, db: AsyncSession):
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=400, detail="This login is already taken")
 
     hashed_password = pwd_context.hash(user.password)
 

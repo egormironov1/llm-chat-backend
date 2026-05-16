@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}LLM Chat{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-card">
+        <h1>Your private AI chat space</h1>
+        <p>
+            LLM Chat is a simple web interface for chatting with a local LLM.
+            Create an account, sign in, open your chats, and talk to your assistant
+            in a cleaner and more modern interface.
+        </p>
+
+        <div class="hero-actions">
+            <a href="/ui/register" class="btn btn-primary">Create account</a>
+            <a href="/ui/login" class="btn btn-secondary">Login</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

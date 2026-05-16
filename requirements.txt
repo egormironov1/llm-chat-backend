@@ -13,3 +13,5 @@ python-dotenv
 llama-cpp-python==0.3.20
 alembic
 psycopg2-binary
+jinja2
+python-multipart
